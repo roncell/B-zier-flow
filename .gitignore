@@ -1,0 +1,8 @@
+node_modules
+# Ignore all non-code files
+*.pdf
+*.log
+*.tmp
+.DS_Store
+
+
