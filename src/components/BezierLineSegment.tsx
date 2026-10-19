@@ -1,10 +1,6 @@
 import { CubicBezierLine } from "@react-three/drei"
 import { ControlPoints } from "../types"
-
-const lineProps = {
-  lineWidth: 0.7,
-  color: "#fa00a0",
-}
+import { COLORS } from "../theme"
 
 export const BezierLineSegment = ({
   segmentName,
@@ -20,6 +16,7 @@ export const BezierLineSegment = ({
     midB={segment.midPointB}
     end={segment.endPoint}
     segments={50}
-    {...lineProps}
+    lineWidth={2}
+    color={COLORS.curve}
   />
 )

@@ -1,8 +1,9 @@
 import "./styles.css"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls } from "@react-three/drei/core"
+import { OrbitControls } from "@react-three/drei"
 import { BezierCurveEditor } from "./components/BezierCurveEditor"
 import { UI } from "./components/UI/UI"
+import { COLORS } from "./theme"
 
 export default function App() {
   return (
@@ -11,9 +12,8 @@ export default function App() {
         <UI />
       </div>
       <Canvas
-        style={{ background: "#000" }}
         id="canvas"
-        dpr={window.devicePixelRatio}
+        dpr={[1, 2]}
         camera={{
           position: [0, 5, 15],
           near: 0.01,
@@ -21,9 +21,10 @@ export default function App() {
           fov: 45,
         }}
       >
+        <color attach="background" args={[COLORS.background]} />
         <BezierCurveEditor />
         <ambientLight intensity={2} />
-        <gridHelper args={[20, 20]} />
+        <gridHelper args={[20, 20, COLORS.gridCenter, COLORS.grid]} />
         <OrbitControls makeDefault />
       </Canvas>
     </div>

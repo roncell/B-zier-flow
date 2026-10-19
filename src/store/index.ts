@@ -1,17 +1,19 @@
-import create from "zustand"
+import { create } from "zustand"
 import { ControlPoints } from "../types"
 import { getRandomPoint } from "../utils/helpers"
 
 interface SegmentsState {
   segments: ControlPoints[]
   playAnimation: boolean
+  constantSpeed: boolean
   updateSegment: (segmentIndex: number, newPoints: ControlPoints) => void
   addRandomSegment: () => void
   removeSegments: () => void
   setPlayAnimation: (v: boolean) => void
+  setConstantSpeed: (v: boolean) => void
 }
 
-export const useStore = create<SegmentsState>((set) => ({
+export const useStore = create<SegmentsState>()((set) => ({
   segments: [
     {
       startPoint: [-2, -2, 1],
@@ -21,22 +23,21 @@ export const useStore = create<SegmentsState>((set) => ({
     },
   ],
   playAnimation: true,
-  updateSegment: (segmentIndex: number, newPoints: ControlPoints) =>
+  constantSpeed: true,
+  updateSegment: (segmentIndex, newPoints) =>
     set((state) => {
       const newSegments = [...state.segments]
       newSegments[segmentIndex] = {
         ...newSegments[segmentIndex],
         ...newPoints,
       }
-      return {
-        segments: newSegments,
-      }
+      return { segments: newSegments }
     }),
   addRandomSegment: () =>
     set((state) => {
       const newSegments = [...state.segments]
       newSegments.push({
-        startPoint: newSegments[newSegments.length - 1]?.endPoint || [0, 0, 0],
+        startPoint: newSegments[newSegments.length - 1]?.endPoint ?? [0, 0, 0],
         endPoint: getRandomPoint(),
         midPointA: getRandomPoint(),
         midPointB: getRandomPoint(),
@@ -44,5 +45,6 @@ export const useStore = create<SegmentsState>((set) => ({
       return { segments: newSegments }
     }),
   removeSegments: () => set({ segments: [] }),
-  setPlayAnimation: (v: boolean) => set({ playAnimation: v }),
+  setPlayAnimation: (v) => set({ playAnimation: v }),
+  setConstantSpeed: (v) => set({ constantSpeed: v }),
 }))

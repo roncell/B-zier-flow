@@ -1,10 +1,11 @@
-import { Vector3Tuple } from "three"
-import { ControlPointName } from "../types"
 import { useState } from "react"
+import { ThreeEvent } from "@react-three/fiber"
+import { ControlPointName } from "../types"
+import { COLORS } from "../theme"
 
 interface ControlPointProps {
   idName: string
-  position: Vector3Tuple
+  position: [number, number, number]
   name: ControlPointName
   segmentIndex: number
   selectedSegment: number | null
@@ -28,26 +29,36 @@ export const ControlPoint = ({
   onControlPointSelect,
 }: ControlPointProps) => {
   const [hovered, setHovered] = useState(false)
+  const isHandle = name === "midPointA" || name === "midPointB"
+  const active =
+    `${selectedSegment}-${selectedControlPoint}` === idName || hovered
+
   return (
     <mesh
       name={idName}
       position={position}
-      onClick={() => onControlPointSelect(name, segmentIndex, idName)}
+      onClick={(e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation()
+        onControlPointSelect(name, segmentIndex, idName)
+      }}
       onPointerMissed={deselect}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        setHovered(true)
+        document.body.style.cursor = "pointer"
+      }}
+      onPointerOut={() => {
+        setHovered(false)
+        document.body.style.cursor = ""
+      }}
     >
-      {name === "midPointA" || name === "midPointB" ? (
-        <sphereBufferGeometry args={[0.1, 32]} />
+      {isHandle ? (
+        <sphereGeometry args={[0.14, 24, 12]} />
       ) : (
-        <boxBufferGeometry args={[0.2, 0.2, 0.2]} />
+        <boxGeometry args={[0.26, 0.26, 0.26]} />
       )}
       <meshBasicMaterial
-        color={
-          `${selectedSegment}-${selectedControlPoint}` === idName || hovered
-            ? "blue"
-            : "red"
-        }
+        color={active ? COLORS.active : isHandle ? COLORS.handle : COLORS.endpoint}
       />
     </mesh>
   )

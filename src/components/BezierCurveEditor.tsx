@@ -1,41 +1,41 @@
 import { useState, useRef, useCallback, Fragment, useEffect } from "react"
 import { TransformControls } from "@react-three/drei"
 import { useThree } from "@react-three/fiber"
-import { Object3D } from "three"
+import { Mesh, Object3D } from "three"
 import { updateCurve } from "../utils/helpers"
 import { BezierLineSegment } from "./BezierLineSegment"
 import { ControlPoint } from "./ControlPoint"
 import { ControlPointName, ControlPoints } from "../types"
 import { useStore } from "../store"
 import { useAnimation } from "./useAnimation"
+import { COLORS } from "../theme"
 
 export const BezierCurveEditor = () => {
-  const { scene } = useThree()
+  const scene = useThree((state) => state.scene)
   const segments = useStore((state) => state.segments)
   const updateSegment = useStore((state) => state.updateSegment)
-  const [
-    selectedControlPoint,
-    setSelectedControlPoint,
-  ] = useState<ControlPointName | null>(null)
+  const [selectedControlPoint, setSelectedControlPoint] =
+    useState<ControlPointName | null>(null)
   const [selectedSegment, setSelectedSegment] = useState<number | null>(null)
-  const selectedCurve = useRef<Object3D | null>()
-  const prevSegmentCurve = useRef<Object3D | null>()
-  const selectedControlPointRef = useRef<Object3D | null>()
+  const selectedCurve = useRef<Object3D | null>(null)
+  const prevSegmentCurve = useRef<Object3D | null>(null)
+  const selectedControlPointRef = useRef<Object3D | null>(null)
   const newControlPoints = useRef<ControlPoints | null>(null)
   const prevSegmentControlPoints = useRef<ControlPoints | null>(null)
-  const testObj = useRef<Object3D>()
+  const traveler = useRef<Mesh>(null)
 
-  useAnimation(testObj)
+  useAnimation(traveler)
 
   const onControlPointSelect = useCallback(
     (name: ControlPointName, segmentIndex: number, idName: string) => {
       setSelectedSegment(segmentIndex)
       setSelectedControlPoint(name)
-      selectedControlPointRef.current = scene.getObjectByName(idName)
-      selectedCurve.current = scene.getObjectByName(segmentIndex.toString())
+      selectedControlPointRef.current = scene.getObjectByName(idName) ?? null
+      selectedCurve.current =
+        scene.getObjectByName(segmentIndex.toString()) ?? null
       prevSegmentCurve.current =
         name === "startPoint"
-          ? scene.getObjectByName((segmentIndex - 1).toString())
+          ? scene.getObjectByName((segmentIndex - 1).toString()) ?? null
           : null
     },
     [scene]
@@ -47,21 +47,25 @@ export const BezierCurveEditor = () => {
       selectedSegment !== null &&
       selectedControlPointRef.current
     ) {
+      const position = selectedControlPointRef.current.position.toArray() as [
+        number,
+        number,
+        number,
+      ]
       newControlPoints.current = {
         ...segments[selectedSegment],
-        [selectedControlPoint]: selectedControlPointRef.current.position.toArray(),
+        [selectedControlPoint]: position,
       }
-      if (selectedCurve.current && newControlPoints.current) {
+      if (selectedCurve.current) {
         updateCurve(newControlPoints.current, selectedCurve)
       }
-      if (prevSegmentCurve.current) {
+      // A segment's start point is shared with the previous segment's end point.
+      if (prevSegmentCurve.current && segments[selectedSegment - 1]) {
         prevSegmentControlPoints.current = {
           ...segments[selectedSegment - 1],
-          endPoint: selectedControlPointRef.current.position.toArray(),
+          endPoint: position,
         }
-        if (prevSegmentControlPoints.current) {
-          updateCurve(prevSegmentControlPoints.current, prevSegmentCurve)
-        }
+        updateCurve(prevSegmentControlPoints.current, prevSegmentCurve)
       }
     }
   }, [segments, selectedControlPoint, selectedSegment])
@@ -70,41 +74,48 @@ export const BezierCurveEditor = () => {
     if (newControlPoints.current && selectedSegment !== null) {
       updateSegment(selectedSegment, newControlPoints.current)
       newControlPoints.current = null
-      selectedCurve.current = null
-      selectedControlPointRef.current = null
-      if (prevSegmentCurve.current && prevSegmentControlPoints.current) {
+      if (prevSegmentControlPoints.current) {
         updateSegment(selectedSegment - 1, prevSegmentControlPoints.current)
         prevSegmentControlPoints.current = null
-        prevSegmentCurve.current = null
       }
     }
-    if (testObj.current) testObj.current.visible = true
+    if (traveler.current) traveler.current.visible = true
   }, [selectedSegment, updateSegment])
 
   const deselect = useCallback(() => {
     setSelectedSegment(null)
     setSelectedControlPoint(null)
+    selectedCurve.current = null
+    prevSegmentCurve.current = null
+    selectedControlPointRef.current = null
   }, [])
 
   useEffect(() => {
     if (segments.length < 1) deselect()
   }, [segments, deselect])
 
+  const selectedObject =
+    selectedControlPoint && selectedSegment !== null
+      ? scene.getObjectByName(`${selectedSegment}-${selectedControlPoint}`)
+      : undefined
+
   return (
     <>
-      {segments.map((segment: ControlPoints, segmentIndex: number) => (
+      {segments.map((segment, segmentIndex) => (
         <group key={segmentIndex}>
           <BezierLineSegment segmentName={segmentIndex} segment={segment} />
-          {Object.keys(segment).map((controlPoint) => {
+          {(Object.keys(segment) as ControlPointName[]).map((controlPoint) => {
             const identificationName = `${segmentIndex}-${controlPoint}`
+            // Shared joints are drawn once: only the last segment shows its end point.
+            const visible =
+              segmentIndex + 1 === segments.length || controlPoint !== "endPoint"
             return (
               <Fragment key={identificationName}>
-                {(segmentIndex + 1 === segments.length ||
-                  controlPoint !== "endPoint") && (
+                {visible && (
                   <ControlPoint
                     idName={identificationName}
-                    position={segment[controlPoint as ControlPointName]}
-                    name={controlPoint as ControlPointName}
+                    position={segment[controlPoint]}
+                    name={controlPoint}
                     segmentIndex={segmentIndex}
                     selectedSegment={selectedSegment}
                     selectedControlPoint={selectedControlPoint}
@@ -117,25 +128,25 @@ export const BezierCurveEditor = () => {
           })}
         </group>
       ))}
-      {selectedControlPoint && segments.length > 0 && (
+      {selectedObject && segments.length > 0 && (
         <TransformControls
-          object={scene.getObjectByName(
-            `${selectedSegment}-${selectedControlPoint}`
-          )}
+          object={selectedObject}
           mode="translate"
+          size={0.8}
           onObjectChange={onTransformChange}
           onMouseUp={onTransformEnd}
           onMouseDown={() => {
-            if (testObj.current) testObj.current.visible = false
+            if (traveler.current) traveler.current.visible = false
           }}
         />
       )}
       <mesh
-        ref={testObj}
-        position={segments[0] ? [...segments[0].startPoint] : [0, 0, 0]}
+        ref={traveler}
+        visible={segments.length > 0}
+        position={segments[0]?.startPoint ?? [0, 0, 0]}
       >
-        <sphereBufferGeometry args={[0.2, 32]} />
-        <meshBasicMaterial color="yellow" />
+        <sphereGeometry args={[0.2, 32, 16]} />
+        <meshBasicMaterial color={COLORS.traveler} />
       </mesh>
     </>
   )

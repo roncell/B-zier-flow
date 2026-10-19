@@ -1,31 +1,33 @@
-.App {
-  font-family: sans-serif;
-  text-align: center;
+:root {
+  --bg: #07090c;
+  --panel: rgba(18, 24, 32, 0.82);
+  --line: #26303b;
+  --fg: #e5eaf0;
+  --muted: #8c98a5;
+  --accent: #5ed6dc;
+  --handle: #e7a94a;
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
 }
 
 html,
-body {
+body,
+#root,
+#container {
   margin: 0;
   padding: 0;
   height: 100%;
-}
-
-#root {
-  height: 100%;
-}
-
-#container {
   width: 100%;
-  height: 100%;
-  display: block;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--f-body);
 }
 
 .ui-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   z-index: 10;
   overflow: hidden;
   pointer-events: none;
@@ -33,26 +35,172 @@ body {
 
 .ui-content {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  padding: 10px;
+  top: max(16px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  width: 280px;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  pointer-events: all;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.ui-head h1 {
+  font-family: var(--f-display);
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  margin: 2px 0 6px;
+}
+.ui-head p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.back {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.back:hover {
+  color: var(--accent);
+}
+
+.ui-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.ui-buttons .button:first-child {
+  grid-column: 1 / -1;
 }
 
 .button {
-  color: #fa00a0;
-  background: rgb(75, 75, 75);
-  border: 1px solid #fa00a0;
-  border-radius: 5px;
-  padding: 5px 10px;
+  font: 600 13px var(--f-body);
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.button[aria-pressed="true"] {
+  background: rgba(94, 214, 220, 0.14);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ui-buttons .button:first-child {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.button:hover {
-  background: grey;
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
   cursor: pointer;
+}
+.toggle input {
+  accent-color: var(--accent);
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.legend .count {
+  margin-left: auto;
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.dot.endpoint {
+  background: var(--fg);
+}
+.dot.handle {
+  background: var(--handle);
+  border-radius: 50%;
+}
+
+.export {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(560px, calc(100% - 32px));
+  box-sizing: border-box;
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  pointer-events: auto;
+}
+.export-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.export-actions {
+  display: flex;
+  gap: 6px;
+}
+.export pre {
+  margin: 0;
+  max-height: 40vh;
+  overflow: auto;
+  font: 12px/1.6 var(--f-mono);
+  color: var(--fg);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 600px) {
+  .ui-content {
+    width: auto;
+    right: max(16px, env(safe-area-inset-right));
+    padding: 12px;
+    gap: 10px;
+  }
+  .ui-head p {
+    display: none;
+  }
+  .ui-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .ui-buttons .button:first-child {
+    grid-column: auto;
+  }
+  .button {
+    padding: 7px 8px;
+    font-size: 12px;
+  }
 }
